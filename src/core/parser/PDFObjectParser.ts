@@ -27,6 +27,7 @@ import { IsDelimiter } from 'src/core/syntax/Delimiters';
 import { Keywords } from 'src/core/syntax/Keywords';
 import { IsDigit, IsNumeric } from 'src/core/syntax/Numeric';
 import { IsWhitespace } from 'src/core/syntax/Whitespace';
+import { OnWarningHandler } from 'src/types';
 import { charFromCode } from 'src/utils';
 
 // TODO: Throw error if eof is reached before finishing object parse...
@@ -35,18 +36,26 @@ class PDFObjectParser extends BaseParser {
     bytes: Uint8Array,
     context: PDFContext,
     capNumbers?: boolean,
-  ) => new PDFObjectParser(ByteStream.of(bytes), context, capNumbers);
+    onWarning?: OnWarningHandler,
+  ) =>
+    new PDFObjectParser(ByteStream.of(bytes), context, capNumbers, onWarning);
 
   static forByteStream = (
     byteStream: ByteStream,
     context: PDFContext,
     capNumbers = false,
-  ) => new PDFObjectParser(byteStream, context, capNumbers);
+    onWarning?: OnWarningHandler,
+  ) => new PDFObjectParser(byteStream, context, capNumbers, onWarning);
 
   protected readonly context: PDFContext;
 
-  constructor(byteStream: ByteStream, context: PDFContext, capNumbers = false) {
-    super(byteStream, capNumbers);
+  constructor(
+    byteStream: ByteStream,
+    context: PDFContext,
+    capNumbers = false,
+    onWarning?: OnWarningHandler,
+  ) {
+    super(byteStream, capNumbers, onWarning);
     this.context = context;
   }
 

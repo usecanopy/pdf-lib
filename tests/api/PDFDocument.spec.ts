@@ -142,6 +142,20 @@ describe(`PDFDocument`, () => {
         }),
       ).rejects.toEqual(expectedError);
     });
+
+    it(`uses the provided onWarning callback`, async () => {
+      expect.assertions(2);
+      const onWarning = jest.fn();
+      await PDFDocument.load(invalidObjectsPdfBytes, {
+        ignoreEncryption: true,
+        parseSpeed: ParseSpeeds.Fastest,
+        onWarning,
+      });
+      expect(onWarning).toHaveBeenCalledTimes(2);
+      expect(onWarning).toHaveBeenCalledWith(
+        'Trying to parse invalid object: {"line":20,"column":13,"offset":126})',
+      );
+    });
   });
 
   describe(`embedFont() method`, () => {

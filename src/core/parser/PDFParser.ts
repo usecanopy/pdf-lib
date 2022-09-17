@@ -22,6 +22,7 @@ import PDFContext from 'src/core/PDFContext';
 import CharCodes from 'src/core/syntax/CharCodes';
 import { Keywords } from 'src/core/syntax/Keywords';
 import { IsDigit } from 'src/core/syntax/Numeric';
+import { OnWarningHandler } from 'src/types';
 import { waitForTick } from 'src/utils';
 
 class PDFParser extends PDFObjectParser {
@@ -30,8 +31,15 @@ class PDFParser extends PDFObjectParser {
     objectsPerTick?: number,
     throwOnInvalidObject?: boolean,
     capNumbers?: boolean,
+    onWarning?: OnWarningHandler,
   ) =>
-    new PDFParser(pdfBytes, objectsPerTick, throwOnInvalidObject, capNumbers);
+    new PDFParser(
+      pdfBytes,
+      objectsPerTick,
+      throwOnInvalidObject,
+      capNumbers,
+      onWarning,
+    );
 
   private readonly objectsPerTick: number;
   private readonly throwOnInvalidObject: boolean;
@@ -43,8 +51,9 @@ class PDFParser extends PDFObjectParser {
     objectsPerTick = Infinity,
     throwOnInvalidObject = false,
     capNumbers = false,
+    onWarning?: OnWarningHandler,
   ) {
-    super(ByteStream.of(pdfBytes), PDFContext.create(), capNumbers);
+    super(ByteStream.of(pdfBytes), PDFContext.create(), capNumbers, onWarning);
     this.objectsPerTick = objectsPerTick;
     this.throwOnInvalidObject = throwOnInvalidObject;
   }
@@ -70,7 +79,7 @@ class PDFParser extends PDFObjectParser {
     this.maybeRecoverRoot();
 
     if (this.context.lookup(PDFRef.of(0))) {
-      console.warn('Removing parsed object: 0 0 R');
+      this.onWarning('Removing parsed object: 0 0 R');
       this.context.delete(PDFRef.of(0));
     }
 
@@ -182,11 +191,11 @@ class PDFParser extends PDFObjectParser {
 
     const msg = `Trying to parse invalid object: ${JSON.stringify(startPos)})`;
     if (this.throwOnInvalidObject) throw new Error(msg);
-    console.warn(msg);
+    this.onWarning(msg);
 
     const ref = this.parseIndirectObjectHeader();
 
-    console.warn(`Invalid object ref: ${ref}`);
+    this.onWarning(`Invalid object ref: ${ref}`);
 
     this.skipWhitespaceAndComments();
     const start = this.bytes.offset();

@@ -395,4 +395,29 @@ describe(`PDFParser`, () => {
     const object2 = context.lookup(PDFRef.of(2));
     expect(object2).toBeInstanceOf(PDFString);
   });
+
+  it(`uses the provided onWarning callback`, async () => {
+    expect.assertions(3);
+    const onWarning = jest.fn();
+
+    const input = `
+    %PDF-1.7
+    22 0 obj <</Type/Outlines/First ## 0 R/Last ** 0 R/Count 2>> endobj
+  `;
+    const parser = PDFParser.forBytesWithOptions(
+      typedArrayFor(input),
+      undefined,
+      undefined,
+      undefined,
+      onWarning,
+    );
+    await parser.parseDocument();
+
+    expect(onWarning).toHaveBeenCalledTimes(2);
+    expect(onWarning).toHaveBeenNthCalledWith(
+      1,
+      'Trying to parse invalid object: {"line":3,"column":53,"offset":18})',
+    );
+    expect(onWarning).toHaveBeenNthCalledWith(2, 'Invalid object ref: 22 0 R');
+  });
 });

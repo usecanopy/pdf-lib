@@ -48,7 +48,7 @@ import {
 import PDFObject from 'src/core/objects/PDFObject';
 import PDFRef from 'src/core/objects/PDFRef';
 import { Fontkit } from 'src/types/fontkit';
-import { TransformationMatrix } from 'src/types/matrix';
+import { OnWarningHandler, TransformationMatrix } from 'src/types';
 import {
   assertIs,
   assertIsOneOfOrUndefined,
@@ -131,6 +131,7 @@ export default class PDFDocument {
       ignoreEncryption = false,
       parseSpeed = ParseSpeeds.Slow,
       throwOnInvalidObject = false,
+      onWarning,
       updateMetadata = true,
       capNumbers = false,
     } = options;
@@ -146,8 +147,14 @@ export default class PDFDocument {
       parseSpeed,
       throwOnInvalidObject,
       capNumbers,
+      onWarning,
     ).parseDocument();
-    return new PDFDocument(context, ignoreEncryption, updateMetadata);
+    return new PDFDocument(
+      context,
+      ignoreEncryption,
+      updateMetadata,
+      onWarning,
+    );
   }
 
   /**
@@ -155,7 +162,7 @@ export default class PDFDocument {
    * @returns Resolves with the newly created document.
    */
   static async create(options: CreateOptions = {}) {
-    const { updateMetadata = true } = options;
+    const { updateMetadata = true, onWarning } = options;
 
     const context = PDFContext.create();
     const pageTree = PDFPageTree.withContext(context);
@@ -163,7 +170,7 @@ export default class PDFDocument {
     const catalog = PDFCatalog.withContextAndPages(context, pageTreeRef);
     context.trailerInfo.Root = context.register(catalog);
 
-    return new PDFDocument(context, false, updateMetadata);
+    return new PDFDocument(context, false, updateMetadata, onWarning);
   }
 
   /** The low-level context of this document. */
@@ -174,6 +181,9 @@ export default class PDFDocument {
 
   /** Whether or not this document is encrypted. */
   readonly isEncrypted: boolean;
+
+  /** The function called with details of non-fatal issues. */
+  readonly onWarning: OnWarningHandler;
 
   /** The default word breaks used in PDFPage.drawText */
   defaultWordBreaks: string[] = [' '];
@@ -193,13 +203,16 @@ export default class PDFDocument {
     context: PDFContext,
     ignoreEncryption: boolean,
     updateMetadata: boolean,
+    onWarning: OnWarningHandler = console.warn.bind(console),
   ) {
     assertIs(context, 'context', [[PDFContext, 'PDFContext']]);
     assertIs(ignoreEncryption, 'ignoreEncryption', ['boolean']);
+    assertIs(onWarning, 'onWarning', ['function']);
 
     this.context = context;
     this.catalog = context.lookup(context.trailerInfo.Root) as PDFCatalog;
     this.isEncrypted = !!context.lookup(context.trailerInfo.Encrypt);
+    this.onWarning = onWarning;
 
     this.pageCache = Cache.populatedBy(this.computePages);
     this.pageMap = new Map();
@@ -254,7 +267,7 @@ export default class PDFDocument {
   getForm(): PDFForm {
     const form = this.formCache.access();
     if (form.hasXFA()) {
-      console.warn(
+      this.onWarning(
         'Removing XFA form data as pdf-lib does not support reading or writing XFA',
       );
       form.deleteXFA();

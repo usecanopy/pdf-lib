@@ -607,7 +607,7 @@ export default class PDFTextField extends PDFField {
   enableCombing() {
     if (this.getMaxLength() === undefined) {
       const msg = `PDFTextFields must have a max length in order to be combed`;
-      console.warn(msg);
+      this.doc.onWarning(msg);
     }
 
     this.markAsDirty();

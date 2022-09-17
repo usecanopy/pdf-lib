@@ -3,6 +3,7 @@ import ByteStream from 'src/core/parser/ByteStream';
 import CharCodes from 'src/core/syntax/CharCodes';
 import { IsDigit, IsNumeric } from 'src/core/syntax/Numeric';
 import { IsWhitespace } from 'src/core/syntax/Whitespace';
+import { OnWarningHandler } from 'src/types';
 import { charFromCode } from 'src/utils';
 
 const { Newline, CarriageReturn } = CharCodes;
@@ -11,10 +12,16 @@ const { Newline, CarriageReturn } = CharCodes;
 class BaseParser {
   protected readonly bytes: ByteStream;
   protected readonly capNumbers: boolean;
+  protected readonly onWarning: OnWarningHandler;
 
-  constructor(bytes: ByteStream, capNumbers = false) {
+  constructor(
+    bytes: ByteStream,
+    capNumbers = false,
+    onWarning = console.warn.bind(console),
+  ) {
     this.bytes = bytes;
     this.capNumbers = capNumbers;
+    this.onWarning = onWarning;
   }
 
   protected parseRawInt(): number {
@@ -64,11 +71,11 @@ class BaseParser {
     if (numberValue > Number.MAX_SAFE_INTEGER) {
       if (this.capNumbers) {
         const msg = `Parsed number that is too large for some PDF readers: ${value}, using Number.MAX_SAFE_INTEGER instead.`;
-        console.warn(msg);
+        this.onWarning(msg);
         return Number.MAX_SAFE_INTEGER;
       } else {
         const msg = `Parsed number that is too large for some PDF readers: ${value}, not capping.`;
-        console.warn(msg);
+        this.onWarning(msg);
       }
     }
 

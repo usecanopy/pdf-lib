@@ -1,5 +1,5 @@
 import { EmbeddedFileOptions } from 'src/core/embedders/FileEmbedder';
-import { TypeFeatures } from 'src/types/fontkit';
+import { OnWarningHandler, TypeFeatures } from 'src/types';
 
 export enum ParseSpeeds {
   Fastest = Infinity,
@@ -25,11 +25,13 @@ export interface LoadOptions {
   ignoreEncryption?: boolean;
   parseSpeed?: ParseSpeeds | number;
   throwOnInvalidObject?: boolean;
+  onWarning?: OnWarningHandler;
   updateMetadata?: boolean;
   capNumbers?: boolean;
 }
 
 export interface CreateOptions {
+  onWarning?: OnWarningHandler;
   updateMetadata?: boolean;
 }
 

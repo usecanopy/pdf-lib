@@ -5,21 +5,32 @@ import PDFRawStream from 'src/core/objects/PDFRawStream';
 import PDFRef from 'src/core/objects/PDFRef';
 import ByteStream from 'src/core/parser/ByteStream';
 import PDFObjectParser from 'src/core/parser/PDFObjectParser';
+import { OnWarningHandler } from 'src/types';
 import { waitForTick } from 'src/utils';
 
 class PDFObjectStreamParser extends PDFObjectParser {
   static forStream = (
     rawStream: PDFRawStream,
     shouldWaitForTick?: () => boolean,
-  ) => new PDFObjectStreamParser(rawStream, shouldWaitForTick);
+    onWarning?: OnWarningHandler,
+  ) => new PDFObjectStreamParser(rawStream, shouldWaitForTick, onWarning);
 
   private alreadyParsed: boolean;
   private readonly shouldWaitForTick: () => boolean;
   private readonly firstOffset: number;
   private readonly objectCount: number;
 
-  constructor(rawStream: PDFRawStream, shouldWaitForTick?: () => boolean) {
-    super(ByteStream.fromPDFRawStream(rawStream), rawStream.dict.context);
+  constructor(
+    rawStream: PDFRawStream,
+    shouldWaitForTick?: () => boolean,
+    onWarning?: OnWarningHandler,
+  ) {
+    super(
+      ByteStream.fromPDFRawStream(rawStream),
+      rawStream.dict.context,
+      undefined,
+      onWarning,
+    );
 
     const { dict } = rawStream;
 
